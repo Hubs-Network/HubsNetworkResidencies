@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { nanoid } from "nanoid";
 import { useStore } from "@/store/useStore";
 import { Hub, Residency, Pilgrim, ChatMessage, LogPost } from "@/lib/types";
-import { updateResidency, addChatMessage, addLogPost, updateHub, addCredits, generateChecksum, generateTxHash } from "@/lib/mockDb";
+import { updateResidency, addChatMessage, addLogPost, updateHub, addCredits, generateChecksum, generateTxHash, updatePilgrim } from "@/lib/mockDb";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -39,7 +39,34 @@ export function ResidencyCard({ residency, hub }: ResidencyCardProps) {
     : null;
   
   const handleChoosePilgrim = (pilgrimId: string) => {
+    // Update residency with chosen pilgrim
     updateResidency(residency.id, { chosenPilgrimId: pilgrimId });
+    
+    // Update pilgrim's residencies list
+    const pilgrim = db.pilgrims.find((p) => p.id === pilgrimId);
+    if (pilgrim) {
+      const updatedResidencies = [...pilgrim.residencies];
+      const existingIndex = updatedResidencies.findIndex((r) => r.residencyId === residency.id);
+      
+      if (existingIndex >= 0) {
+        // Update existing entry
+        updatedResidencies[existingIndex] = {
+          residencyId: residency.id,
+          role: residency.type === "SPECIFIC_PR" ? residency.title : "Participant",
+          status: "SUBMISSIONS_OPEN", // Will be updated to RUNNING after handshake
+        };
+      } else {
+        // Add new entry
+        updatedResidencies.push({
+          residencyId: residency.id,
+          role: residency.type === "SPECIFIC_PR" ? residency.title : "Participant",
+          status: "SUBMISSIONS_OPEN",
+        });
+      }
+      
+      updatePilgrim(pilgrimId, { residencies: updatedResidencies });
+    }
+    
     refreshDb();
     addToast("Pilgrim selected! Open chat to discuss terms.", "success");
     setSubmissionsModalOpen(false);
@@ -116,6 +143,12 @@ export function ResidencyCard({ residency, hub }: ResidencyCardProps) {
   const handleCloseResidency = () => {
     if (!residency.chosenPilgrimId) return;
     
+    // Check if hub has enough credits
+    if (hub.creditBalance < residency.creditAllocated) {
+      addToast(`Insufficient credits! You need ${residency.creditAllocated} credits to close this residency.`, "error");
+      return;
+    }
+    
     updateResidency(residency.id, {
       status: "CLOSED",
       closing: {
@@ -134,6 +167,9 @@ export function ResidencyCard({ residency, hub }: ResidencyCardProps) {
     const creditsEarned = Math.floor((closeData.score / 100) * residency.creditAllocated);
     addCredits("PILGRIM", residency.chosenPilgrimId, creditsEarned);
     
+    // Deduct credits from hub (spent when closing, not when creating)
+    updateHub(hub.id, { creditBalance: hub.creditBalance - residency.creditAllocated });
+    
     // Update pilgrim reputation
     const pilgrim = db.pilgrims.find((p) => p.id === residency.chosenPilgrimId);
     if (pilgrim) {
@@ -146,7 +182,7 @@ export function ResidencyCard({ residency, hub }: ResidencyCardProps) {
     }
     
     refreshDb();
-    addToast(`Residency closed! Pilgrim earned ${creditsEarned} credits.`, "success");
+    addToast(`Residency closed! Hub spent ${residency.creditAllocated} credits. Pilgrim earned ${creditsEarned} credits.`, "success");
     setCloseModalOpen(false);
   };
   

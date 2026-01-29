@@ -55,6 +55,11 @@ export default function PilgrimProfilePage() {
         <h1 className="text-4xl font-bold mb-2">{pilgrim.name}</h1>
         {pilgrim.alias && <p className="text-lg text-gray-600">@{pilgrim.alias}</p>}
         {pilgrim.ens && <p className="text-sm text-gray-500">{pilgrim.ens}</p>}
+        <div className="mt-2 flex items-center gap-2">
+          <Badge variant="default">
+            <code className="text-xs">{pilgrim.ethereumAddress}</code>
+          </Badge>
+        </div>
       </div>
 
       {/* Stats Grid */}

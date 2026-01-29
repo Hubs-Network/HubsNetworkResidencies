@@ -9,6 +9,7 @@ import { Pilgrim } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { generateEthereumAddress } from "@/lib/utils";
 
 export default function RegisterPilgrimPage() {
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function RegisterPilgrimPage() {
     
     const pilgrim: Pilgrim = {
       id: `pilgrim-${nanoid(8)}`,
+      ethereumAddress: generateEthereumAddress(),
       name: formData.name,
       alias: formData.alias || undefined,
       ens: formData.ens || undefined,

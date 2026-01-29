@@ -388,3 +388,16 @@ export async function generateChecksum(data: any): Promise<string> {
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
   return `sha256:${hashHex}`;
 }
+
+// Simulate Pollination: add credits to all hubs
+export function simulatePollination(amountPerHub: number = 100): number {
+  let hubsAffected = 0;
+  
+  db.hubs.forEach((hub) => {
+    hub.creditBalance += amountPerHub;
+    hubsAffected++;
+  });
+  
+  saveToStorage();
+  return hubsAffected;
+}

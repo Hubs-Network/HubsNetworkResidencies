@@ -39,11 +39,6 @@ export function ResidenciesTab({ hub }: ResidenciesTabProps) {
   const handleCreateResidency = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (hub.creditBalance < formData.creditAllocated) {
-      addToast("Insufficient credits", "error");
-      return;
-    }
-    
     const residency: Residency = {
       id: `res-${nanoid(8)}`,
       hubId: hub.id,
@@ -61,7 +56,7 @@ export function ResidenciesTab({ hub }: ResidenciesTabProps) {
     };
     
     createResidency(hub.id, residency);
-    updateHub(hub.id, { creditBalance: hub.creditBalance - formData.creditAllocated });
+    // Credits will be deducted when the residency is closed, not now
     refreshDb();
     addToast("Residency created successfully!", "success");
     setCreateModalOpen(false);
@@ -81,10 +76,7 @@ export function ResidenciesTab({ hub }: ResidenciesTabProps) {
       {/* Create Button */}
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-bold">Your Residencies</h3>
-        <Button
-          onClick={() => setCreateModalOpen(true)}
-          disabled={hub.creditBalance === 0}
-        >
+        <Button onClick={() => setCreateModalOpen(true)}>
           Create New Residency
         </Button>
       </div>

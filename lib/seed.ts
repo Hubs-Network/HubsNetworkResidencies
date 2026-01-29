@@ -259,6 +259,7 @@ export const seedData: MockDatabase = {
   pilgrims: [
     {
       id: "pilgrim-1",
+      ethereumAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
       name: "Alice Martinez",
       alias: "alice.eth",
       ens: "alice.eth",
@@ -273,6 +274,7 @@ export const seedData: MockDatabase = {
     },
     {
       id: "pilgrim-2",
+      ethereumAddress: "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
       name: "Bob Chen",
       alias: "bob_creates",
       tags: ["Artist", "Community Organizer"],
@@ -286,6 +288,7 @@ export const seedData: MockDatabase = {
     },
     {
       id: "pilgrim-3",
+      ethereumAddress: "0xdD2FD4581271e230360230F9337D5c0430Bf44C0",
       name: "Carlos Rodriguez",
       alias: "carlos_dev",
       ens: "carlos.eth",
@@ -302,6 +305,7 @@ export const seedData: MockDatabase = {
     },
     {
       id: "pilgrim-4",
+      ethereumAddress: "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E",
       name: "Diana Kim",
       alias: "diana_ai",
       tags: ["Researcher", "AI Ethics"],
@@ -317,6 +321,7 @@ export const seedData: MockDatabase = {
     },
     {
       id: "pilgrim-5",
+      ethereumAddress: "0x7c5A0CE9267ED19B22F8cae653F198e3E8daf098",
       name: "Emma Thompson",
       alias: "emma_social",
       tags: ["Social Entrepreneur", "Community Builder"],

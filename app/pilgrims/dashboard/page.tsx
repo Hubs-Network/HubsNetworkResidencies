@@ -11,8 +11,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { addSubmission, transferCredits, generateTxHash, updateResidency, updatePilgrim } from "@/lib/mockDb";
-import { Submission, Residency } from "@/lib/types";
+import { addSubmission, transferCredits, generateTxHash, updateResidency, updatePilgrim, addChatMessage, addLogPost } from "@/lib/mockDb";
+import { Submission, Residency, ChatMessage, LogPost } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 export default function PilgrimDashboardPage() {
@@ -21,8 +21,14 @@ export default function PilgrimDashboardPage() {
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [spendModalOpen, setSpendModalOpen] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [logModalOpen, setLogModalOpen] = useState(false);
   const [selectedResidency, setSelectedResidency] = useState<Residency | null>(null);
   const [selectedClosedResidency, setSelectedClosedResidency] = useState<Residency | null>(null);
+  const [selectedChatResidency, setSelectedChatResidency] = useState<Residency | null>(null);
+  const [selectedLogResidency, setSelectedLogResidency] = useState<Residency | null>(null);
+  const [chatMessage, setChatMessage] = useState("");
+  const [logText, setLogText] = useState("");
   
   const [applyData, setApplyData] = useState({
     text: "",
@@ -73,6 +79,16 @@ export default function PilgrimDashboardPage() {
         .filter((r) => r.status === "SUBMISSIONS_OPEN")
         .map((r) => ({ ...r, hub: h }))
     );
+  
+  // Get pilgrim's selected residencies (waiting for handshake)
+  const selectedResidencies = pilgrim.residencies
+    .filter((pr) => pr.status === "SUBMISSIONS_OPEN")
+    .map((pr) => {
+      const residency = db.hubs.flatMap((h) => h.residencies).find((r) => r.id === pr.residencyId);
+      const hub = db.hubs.find((h) => h.id === residency?.hubId);
+      return { ...pr, residency, hub };
+    })
+    .filter((item) => item.residency && item.residency.chosenPilgrimId === pilgrim.id);
   
   // Get pilgrim's running residencies
   const runningResidencies = pilgrim.residencies
@@ -192,6 +208,51 @@ export default function PilgrimDashboardPage() {
     setFeedbackModalOpen(false);
   };
   
+  const handleOpenChat = (residency: Residency) => {
+    setSelectedChatResidency(residency);
+    setChatMessage("");
+    setChatModalOpen(true);
+  };
+  
+  const handleSendMessage = () => {
+    if (!chatMessage.trim() || !selectedChatResidency) return;
+    
+    const message: ChatMessage = {
+      id: `msg-${nanoid(8)}`,
+      fromType: "PILGRIM",
+      fromId: pilgrim.id,
+      text: chatMessage,
+      createdAt: new Date().toISOString(),
+    };
+    
+    addChatMessage(selectedChatResidency.id, message);
+    refreshDb();
+    setChatMessage("");
+  };
+  
+  const handleOpenLog = (residency: Residency) => {
+    setSelectedLogResidency(residency);
+    setLogText("");
+    setLogModalOpen(true);
+  };
+  
+  const handleAddLog = () => {
+    if (!logText.trim() || !selectedLogResidency) return;
+    
+    const log: LogPost = {
+      id: `log-${nanoid(8)}`,
+      authorType: "PILGRIM",
+      authorId: pilgrim.id,
+      text: logText,
+      createdAt: new Date().toISOString(),
+    };
+    
+    addLogPost(selectedLogResidency.id, log);
+    refreshDb();
+    addToast("Log post added!", "success");
+    setLogText("");
+  };
+  
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -225,6 +286,53 @@ export default function PilgrimDashboardPage() {
           </Button>
         </div>
       </Card>
+
+      {/* Selected for Residency (waiting for handshake) */}
+      {selectedResidencies.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold mb-4">🎉 You've Been Selected!</h2>
+          <div className="space-y-4">
+            {selectedResidencies.map((item) => (
+              <Card key={item.residencyId} className="bg-green-50 border-2 border-green-500">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-bold">{item.residency?.title}</h4>
+                      <p className="text-sm text-gray-600">{item.hub?.name}</p>
+                      <Badge variant="green" className="mt-2">Selected - Awaiting Handshake</Badge>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-600">{item.residency?.description}</p>
+
+                  {item.residency?.handshake ? (
+                    <div className="p-3 bg-accent1 border-2 border-black rounded">
+                      <div className="font-bold text-sm">✓ Handshake Complete</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        The residency will start soon!
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-sm text-gray-600">
+                        The hub wants to discuss the residency with you. Open the chat to talk about terms and expectations.
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => handleOpenChat(item.residency!)}
+                      >
+                        Open Chat ({item.residency?.thread.messages.length || 0} messages)
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Open Residencies */}
       <div>
@@ -277,7 +385,7 @@ export default function PilgrimDashboardPage() {
           <div className="space-y-4">
             {runningResidencies.map((item) => (
               <Card key={item.residencyId}>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
                       <h4 className="font-bold">{item.residency?.title}</h4>
@@ -285,9 +393,27 @@ export default function PilgrimDashboardPage() {
                     </div>
                     <Badge variant="accent1">Running</Badge>
                   </div>
+                  
                   <p className="text-sm text-gray-600">
                     Role: {item.role} • Continue working and posting logs!
                   </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleOpenChat(item.residency!)}
+                    >
+                      💬 Chat ({item.residency?.thread.messages.length || 0})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleOpenLog(item.residency!)}
+                    >
+                      📝 Logs ({item.residency?.logPosts.length || 0})
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}
@@ -512,6 +638,132 @@ export default function PilgrimDashboardPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Chat Modal */}
+      <Modal
+        isOpen={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
+        title={`Chat: ${selectedChatResidency?.title || ""}`}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {/* Messages */}
+          <div className="border-2 border-black rounded p-4 h-64 overflow-y-auto space-y-3">
+            {!selectedChatResidency || selectedChatResidency.thread.messages.length === 0 ? (
+              <p className="text-gray-600 text-center py-4">No messages yet</p>
+            ) : (
+              selectedChatResidency.thread.messages.map((msg) => {
+                const isPilgrim = msg.fromType === "PILGRIM";
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex ${isPilgrim ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[70%] px-3 py-2 rounded ${
+                        isPilgrim ? "bg-accent2" : "bg-gray-200"
+                      }`}
+                    >
+                      <div className="text-xs text-gray-600 mb-1">
+                        {isPilgrim ? "You" : "Hub"} • {formatDate(msg.createdAt)}
+                      </div>
+                      <div className="text-sm">{msg.text}</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Input */}
+          {!selectedChatResidency?.handshake && (
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Type your message..."
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                rows={3}
+              />
+              <Button onClick={handleSendMessage} className="w-full">
+                Send Message
+              </Button>
+            </div>
+          )}
+
+          {selectedChatResidency?.handshake && (
+            <div className="p-3 bg-green-100 border-2 border-green-600 rounded">
+              <div className="font-bold text-sm">Handshake Complete ✓</div>
+              <div className="text-xs text-gray-600">
+                Checksum: {selectedChatResidency.handshake.checksum.substring(0, 40)}...
+              </div>
+              <div className="text-xs text-gray-600 mt-2">
+                The hub has finalized the agreement. The residency will start soon!
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Log/Blog Modal */}
+      <Modal
+        isOpen={logModalOpen}
+        onClose={() => setLogModalOpen(false)}
+        title={`Residency Log: ${selectedLogResidency?.title || ""}`}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {/* Log Posts */}
+          <div className="border-2 border-black rounded p-4 max-h-96 overflow-y-auto space-y-4">
+            {!selectedLogResidency || selectedLogResidency.logPosts.length === 0 ? (
+              <p className="text-gray-600 text-center py-4">No log posts yet. Be the first to add one!</p>
+            ) : (
+              selectedLogResidency.logPosts.map((log) => {
+                const isHub = log.authorType === "HUB";
+                return (
+                  <div
+                    key={log.id}
+                    className={`p-4 rounded border-2 ${
+                      isHub ? "bg-blue-50 border-blue-300" : "bg-amber-50 border-amber-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-bold text-sm">
+                        {isHub ? "🏢 Hub" : "🚶 Pilgrim"}
+                      </div>
+                      <div className="text-xs text-gray-600">{formatDate(log.createdAt)}</div>
+                    </div>
+                    <div className="text-sm whitespace-pre-wrap">{log.text}</div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Add Log Input */}
+          {selectedLogResidency?.status === "RUNNING" && (
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Add a log post about your progress, learnings, or updates..."
+                value={logText}
+                onChange={(e) => setLogText(e.target.value)}
+                rows={4}
+              />
+              <Button onClick={handleAddLog} className="w-full">
+                Add Log Post
+              </Button>
+            </div>
+          )}
+
+          {selectedLogResidency?.status === "CLOSED" && (
+            <div className="p-3 bg-purple-100 border-2 border-purple-600 rounded">
+              <div className="font-bold text-sm">Residency Closed</div>
+              <div className="text-xs text-gray-600 mt-1">
+                This residency has been closed. No more logs can be added.
+              </div>
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

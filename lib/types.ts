@@ -33,6 +33,7 @@ export interface Hub {
 
 export interface Pilgrim {
   id: string;
+  ethereumAddress: string; // Ethereum address as unique identifier
   name: string;
   alias?: string;
   ens?: string;
