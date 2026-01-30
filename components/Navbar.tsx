@@ -6,14 +6,21 @@ import { usePathname } from "next/navigation";
 import { SessionSwitcher } from "./SessionSwitcher";
 import { useStore } from "@/store/useStore";
 
+// Define the type for nav links
+interface NavLink {
+  href: string;
+  label: string;
+  highlight?: boolean;
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const { session } = useStore();
-  
+
   // Dynamic nav links based on session type
-  const getNavLinks = () => {
-    const baseLinks = [{ href: "/", label: "Home" }];
-    
+  const getNavLinks = (): NavLink[] => {
+    const baseLinks: NavLink[] = [{ href: "/", label: "Home" }];
+
     // Add dashboard link if logged in
     if (session.type === "HUB") {
       baseLinks.push({ href: "/hubs/dashboard", label: "My Dashboard", highlight: true });
@@ -22,7 +29,7 @@ export function Navbar() {
     } else if (session.type === "PATRON") {
       baseLinks.push({ href: "/patrons/dashboard", label: "My Dashboard", highlight: true });
     }
-    
+
     // Common links for all users
     baseLinks.push(
       { href: "/hubs", label: "Hubs" },
@@ -31,10 +38,10 @@ export function Navbar() {
       { href: "/seasons", label: "Seasons" },
       { href: "/map", label: "Map" }
     );
-    
+
     return baseLinks;
   };
-  
+
   const navLinks = getNavLinks();
   
   return (
