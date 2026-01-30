@@ -389,15 +389,34 @@ export async function generateChecksum(data: any): Promise<string> {
   return `sha256:${hashHex}`;
 }
 
-// Simulate Pollination: add credits to all hubs
-export function simulatePollination(amountPerHub: number = 100): number {
-  let hubsAffected = 0;
+// Simulate Pollination: distribute credits to all hubs
+// Formula: ((100 × number of hubs) + LiveBalance) / number of hubs
+export function simulatePollination(): { hubsAffected: number; creditsPerHub: number } {
+  const numHubs = db.hubs.length;
   
+  if (numHubs === 0) {
+    return { hubsAffected: 0, creditsPerHub: 0 };
+  }
+  
+  // Get current season's live balance
+  const currentSeason = getCurrentSeason();
+  const liveBalance = currentSeason.nextSeasonLiveBalance;
+  
+  // Calculate credits per hub: ((100 × numHubs) + liveBalance) / numHubs
+  const totalPool = (100 * numHubs) + liveBalance;
+  const creditsPerHub = totalPool / numHubs;
+  
+  // Distribute to all hubs
   db.hubs.forEach((hub) => {
-    hub.creditBalance += amountPerHub;
-    hubsAffected++;
+    hub.creditBalance += creditsPerHub;
   });
   
+  // Reset live balance to 0
+  const seasonIndex = db.seasons.findIndex((s) => s.id === currentSeason.id);
+  if (seasonIndex >= 0) {
+    db.seasons[seasonIndex].nextSeasonLiveBalance = 0;
+  }
+  
   saveToStorage();
-  return hubsAffected;
+  return { hubsAffected: numHubs, creditsPerHub };
 }

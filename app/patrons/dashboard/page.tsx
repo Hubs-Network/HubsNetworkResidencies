@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { addVouch, generateTxHash } from "@/lib/mockDb";
 import { Vouch, Submission, Residency } from "@/lib/types";
@@ -28,6 +29,7 @@ export default function PatronDashboardPage() {
     amountFiat: 100,
     tokenContract: "",
     tokenAmount: 1000,
+    requirementsText: "",
   });
   
   if (session.type !== "PATRON" || !session.id) {
@@ -80,6 +82,7 @@ export default function PatronDashboardPage() {
       amountFiat: 100,
       tokenContract: "",
       tokenAmount: 1000,
+      requirementsText: "",
     });
     setVouchModalOpen(true);
   };
@@ -101,6 +104,7 @@ export default function PatronDashboardPage() {
           : undefined,
       committed: true,
       txHash,
+      requirementsText: vouchData.requirementsText || undefined,
     };
     
     addVouch(selectedSubmission.residency.id, selectedSubmission.submission.id, vouch);
@@ -330,6 +334,14 @@ export default function PatronDashboardPage() {
               />
             </>
           )}
+
+          <Textarea
+            label="Requirements & Conditions (Optional)"
+            placeholder="Describe any requirements, conditions, or expectations for this vouch..."
+            value={vouchData.requirementsText}
+            onChange={(e) => setVouchData({ ...vouchData, requirementsText: e.target.value })}
+            rows={4}
+          />
 
           <div className="bg-accent2 border-2 border-black rounded p-4">
             <h4 className="font-bold mb-2">⚠️ Commitment Notice</h4>

@@ -44,7 +44,7 @@ export default function RegisterHubPage() {
       esgImpactText: formData.esgImpactText,
       kpiTags: formData.kpiTags.split(",").map((t) => t.trim()).filter(Boolean),
       menuItems: [],
-      creditBalance: 100,
+      creditBalance: 0, // No initial credits - hubs receive credits through pollination
       residencies: [],
       lat: 40 + Math.random() * 20,
       lng: -10 + Math.random() * 30,

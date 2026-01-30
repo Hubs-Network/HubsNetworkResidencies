@@ -306,12 +306,30 @@ export default function PilgrimDashboardPage() {
                   <p className="text-sm text-gray-600">{item.residency?.description}</p>
 
                   {item.residency?.handshake ? (
-                    <div className="p-3 bg-accent1 border-2 border-black rounded">
-                      <div className="font-bold text-sm">✓ Handshake Complete</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        The residency will start soon!
+                    <>
+                      <div className="p-3 bg-accent1 border-2 border-black rounded">
+                        <div className="font-bold text-sm">✓ Handshake Complete</div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          The residency is now running! You can now post logs.
+                        </div>
                       </div>
-                    </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleOpenChat(item.residency!)}
+                        >
+                          💬 Chat ({item.residency?.thread.messages.length || 0})
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleOpenLog(item.residency!)}
+                        >
+                          📝 Logs ({item.residency?.logPosts.length || 0})
+                        </Button>
+                      </div>
+                    </>
                   ) : (
                     <>
                       <div className="text-sm text-gray-600">
@@ -344,36 +362,61 @@ export default function PilgrimDashboardPage() {
           />
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
-            {openResidencies.map((item) => (
-              <Card key={item.id}>
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-bold">{item.title}</h4>
-                      <p className="text-sm text-gray-600">{item.hub.name}</p>
+            {openResidencies.map((item) => {
+              // Check if pilgrim has already applied to this residency
+              const hasApplied = item.submissions.some(
+                (sub) => sub.pilgrimId === pilgrim.id
+              );
+              const canApplyAgain = item.type === "OPEN_APPLICATION" || !hasApplied;
+
+              return (
+                <Card key={item.id}>
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-bold">{item.title}</h4>
+                        <p className="text-sm text-gray-600">{item.hub.name}</p>
+                      </div>
+                      <Badge variant={item.type === "OPEN_APPLICATION" ? "accent2" : "accent1"}>
+                        {item.type === "OPEN_APPLICATION" ? "Open" : "Specific"}
+                      </Badge>
                     </div>
-                    <Badge variant={item.type === "OPEN_APPLICATION" ? "accent2" : "accent1"}>
-                      {item.type === "OPEN_APPLICATION" ? "Open" : "Specific"}
-                    </Badge>
+
+                    <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
+
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Credits:</span>
+                      <span className="font-semibold">{item.creditAllocated}</span>
+                    </div>
+
+                    {hasApplied && (
+                      <div className="text-xs text-gray-600 bg-gray-100 p-2 rounded">
+                        ✓ You have already submitted an application
+                      </div>
+                    )}
+
+                    {canApplyAgain ? (
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleOpenApply(item)}
+                      >
+                        {hasApplied ? "Submit Another Application" : "Apply"}
+                      </Button>
+                    ) : (
+                      <div className="p-2 bg-gray-200 border-2 border-gray-400 rounded text-center">
+                        <div className="text-sm font-medium text-gray-700">
+                          Application Submitted
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          Specific PR - Only one application allowed
+                        </div>
+                      </div>
+                    )}
                   </div>
-
-                  <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
-
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Credits:</span>
-                    <span className="font-semibold">{item.creditAllocated}</span>
-                  </div>
-
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() => handleOpenApply(item)}
-                  >
-                    Apply
-                  </Button>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

@@ -35,11 +35,14 @@ export default function SeasonsPage() {
   };
   
   const handlePollination = () => {
-    if (!confirm("Simulate pollination? This will add +100 credits to all hubs.")) return;
+    if (!confirm("Simulate pollination? This will distribute the credit pool (100 × hubs + Live Balance) equally among all hubs.")) return;
     
-    const hubsAffected = simulatePollination(100);
+    const result = simulatePollination();
     refreshDb();
-    addToast(`Pollination complete! ${hubsAffected} hubs received +100 credits`, "success");
+    addToast(
+      `Pollination complete! ${result.hubsAffected} hubs received ${result.creditsPerHub.toFixed(2)} credits each`, 
+      "success"
+    );
   };
   
   return (
@@ -166,7 +169,8 @@ export default function SeasonsPage() {
           
           <div className="border-t-2 border-gray-200 pt-4">
             <p className="text-gray-600 mb-3">
-              Simulate pollination by distributing credits to all hubs in the network (+100 per hub).
+              Simulate pollination by distributing credits to all hubs. Formula: <strong>((100 × number of hubs) + Live Balance) / number of hubs</strong>. 
+              This redistributes the accumulated Live Balance equally among all hubs.
             </p>
             <Button onClick={handlePollination} variant="primary" className="w-full md:w-auto bg-accent1 hover:bg-accent1/80 text-black">
               🌸 Simulate Pollination

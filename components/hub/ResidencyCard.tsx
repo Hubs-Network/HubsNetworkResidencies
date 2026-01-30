@@ -118,6 +118,17 @@ export function ResidencyCard({ residency, hub }: ResidencyCardProps) {
       status: "RUNNING",
     });
     
+    // Update pilgrim's residencies list to RUNNING status
+    const pilgrim = db.pilgrims.find((p) => p.id === residency.chosenPilgrimId);
+    if (pilgrim) {
+      const updatedResidencies = pilgrim.residencies.map((r) =>
+        r.residencyId === residency.id
+          ? { ...r, status: "RUNNING" as const }
+          : r
+      );
+      updatePilgrim(residency.chosenPilgrimId, { residencies: updatedResidencies });
+    }
+    
     refreshDb();
     addToast(`Handshake generated! TX: ${txHash.substring(0, 10)}...`, "success");
     setChatModalOpen(false);
@@ -310,20 +321,30 @@ export function ResidencyCard({ residency, hub }: ResidencyCardProps) {
                     {sub.vouches.length > 0 && (
                       <div>
                         <div className="text-sm font-semibold mb-1">Vouches ({sub.vouches.length}):</div>
-                        {sub.vouches.map((vouch) => {
-                          const voucherName =
-                            vouch.byType === "HUB"
-                              ? db.hubs.find((h) => h.id === vouch.byId)?.name
-                              : db.patrons.find((p) => p.id === vouch.byId)?.name;
-                          return (
-                            <div key={vouch.id} className="text-xs text-gray-600 flex items-center gap-2">
-                              <Badge variant="purple" className="text-xs">{vouch.byType}</Badge>
-                              <span>{voucherName}</span>
-                              {vouch.amountFiat && <span>• ${vouch.amountFiat}</span>}
-                              {vouch.token && <span>• {vouch.token.amount} tokens</span>}
-                            </div>
-                          );
-                        })}
+                        <div className="space-y-2">
+                          {sub.vouches.map((vouch) => {
+                            const voucherName =
+                              vouch.byType === "HUB"
+                                ? db.hubs.find((h) => h.id === vouch.byId)?.name
+                                : db.patrons.find((p) => p.id === vouch.byId)?.name;
+                            return (
+                              <div key={vouch.id} className="p-2 bg-purple-50 border border-purple-200 rounded">
+                                <div className="text-xs text-gray-600 flex items-center gap-2 mb-1">
+                                  <Badge variant="purple" className="text-xs">{vouch.byType}</Badge>
+                                  <span className="font-semibold">{voucherName}</span>
+                                  {vouch.amountFiat && <span>• ${vouch.amountFiat}</span>}
+                                  {vouch.token && <span>• {vouch.token.amount} tokens</span>}
+                                </div>
+                                {vouch.requirementsText && (
+                                  <div className="text-xs text-gray-700 mt-2 pl-2 border-l-2 border-purple-400">
+                                    <span className="font-semibold">Requirements: </span>
+                                    {vouch.requirementsText}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 

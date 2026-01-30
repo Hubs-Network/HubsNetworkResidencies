@@ -86,6 +86,7 @@ export interface Vouch {
   token?: VouchToken;
   committed: boolean;
   txHash?: string;
+  requirementsText?: string; // Patron's requirements for the vouch
 }
 
 export interface Submission {

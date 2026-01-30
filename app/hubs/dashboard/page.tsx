@@ -69,10 +69,10 @@ export default function HubDashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm text-gray-600 mb-1">Credit Balance</h3>
-            <div className="text-3xl font-bold">{hub.creditBalance}</div>
+            <div className="text-3xl font-bold">{hub.creditBalance.toFixed(2)}</div>
           </div>
           <Badge variant="accent1" className="text-lg px-4 py-2">
-            foo: {hub.creditBalance}
+            foo: {hub.creditBalance.toFixed(2)}
           </Badge>
         </div>
       </Card>
